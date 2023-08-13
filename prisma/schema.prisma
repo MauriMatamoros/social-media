@@ -17,8 +17,8 @@ model User {
 
   // profile
   name  String
-  role  String
-  photo String
+  role  String?
+  photo String?
 
   followedBy     User[]  @relation("UserFollows")
   following      User[]  @relation("UserFollows")

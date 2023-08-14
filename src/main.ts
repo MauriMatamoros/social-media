@@ -8,7 +8,9 @@ let PORT: string;
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   PORT = process.env.PORT;
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
+  app.useGlobalPipes(
+    new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }),
+  );
   const config = new DocumentBuilder()
     .setTitle('Nicasource Assignment')
     .addBearerAuth()

@@ -14,7 +14,7 @@ export type UserWithRelations = User & {
   followedBy: Partial<User>[];
   videos: Partial<Video>[];
   favoriteVideos: Partial<Video>[];
-  likes: Partial<Video>;
+  likes: Partial<Video>[];
 };
 
 @Injectable()
@@ -41,8 +41,8 @@ export class UsersService {
     return this.prisma.user.findMany();
   }
 
-  async findOne(id: number): Promise<UserWithRelations | null> {
-    const user = await this.prisma.user.findUnique({
+  async findOne(id: number): Promise<Partial<UserWithRelations> | null> {
+    const { password, ...user } = await this.prisma.user.findUnique({
       where: {
         id,
       },
@@ -57,7 +57,7 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException(`User with id: ${id} not found.`);
     }
-    return user as UserWithRelations;
+    return user as Partial<UserWithRelations>;
   }
 
   async follow(follower: string, following: string) {
@@ -89,6 +89,9 @@ export class UsersService {
 
   async unfollow(follower: string, unfollowing: string) {
     const userTryingToUnfollow = await this.findOne(parseInt(unfollowing));
+    if (follower === unfollowing) {
+      throw new ForbiddenException('You cannot unfollow yourself.');
+    }
     if (
       !userTryingToUnfollow.followedBy.some(
         (user) => user.id === parseInt(follower),

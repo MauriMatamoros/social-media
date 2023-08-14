@@ -40,7 +40,6 @@ export class UsersController {
   @ApiResponse({
     status: 200,
     description: 'Returns an array of users',
-    type: [UserDto],
   })
   findAll() {
     return this.usersService.findAll();

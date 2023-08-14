@@ -42,7 +42,7 @@ export class UsersService {
   }
 
   async findOne(id: number): Promise<Partial<UserWithRelations> | null> {
-    const { password, ...user } = await this.prisma.user.findUnique({
+    const userWithPassword = await this.prisma.user.findUnique({
       where: {
         id,
       },
@@ -51,12 +51,13 @@ export class UsersService {
         followedBy: { select: { id: true, email: true } },
         videos: { select: { id: true, title: true } },
         favoriteVideos: { select: { id: true, title: true } },
-        likes: { select: { id: true } },
+        likes: { select: { id: true, title: true } },
       },
     });
-    if (!user) {
+    if (!userWithPassword) {
       throw new NotFoundException(`User with id: ${id} not found.`);
     }
+    const { password, ...user } = userWithPassword;
     return user as Partial<UserWithRelations>;
   }
 

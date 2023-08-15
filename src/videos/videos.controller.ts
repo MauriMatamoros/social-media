@@ -56,8 +56,11 @@ export class VideosController {
     description: 'Returns an array of videos',
     type: [CreateVideoDto],
   })
-  findAll() {
-    return this.videosService.findAll();
+  findAll(
+    @Query() query: GetAllFiltersDto,
+    @Req() req: RequestWithUserWithRelations,
+  ) {
+    return this.videosService.findAll(query, req.user.id);
   }
 
   @Get(':id')

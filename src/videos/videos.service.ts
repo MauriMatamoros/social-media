@@ -26,7 +26,10 @@ export class VideosService {
     });
   }
 
-  findAll(): Promise<Video[]> {
+  findAll(query: GetAllFiltersDto, authorId: number): Promise<Video[]> {
+    if (query?.owned) {
+      return this.prisma.video.findMany({ where: { authorId } });
+    }
     return this.prisma.video.findMany({ where: { published: true } });
   }
 

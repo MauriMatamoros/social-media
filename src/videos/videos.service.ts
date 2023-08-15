@@ -7,6 +7,7 @@ import { CreateVideoDto } from './dto/create-video.dto';
 import { UpdateVideoDto } from './dto/update-video.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { User, Video } from '@prisma/client';
+import { GetAllFiltersDto } from './dto/get-all-filters.dto';
 
 export type VideoWithRelations = Video & {
   favoritedBy: Partial<User>[];
@@ -16,17 +17,17 @@ export type VideoWithRelations = Video & {
 @Injectable()
 export class VideosService {
   constructor(private prisma: PrismaService) {}
-  create(createVideoDto: CreateVideoDto): Promise<Video> {
+  create(createVideoDto: CreateVideoDto, authorId: number): Promise<Video> {
     return this.prisma.video.create({
       data: {
         ...createVideoDto,
-        authorId: parseInt(createVideoDto.authorId),
+        authorId,
       },
     });
   }
 
   findAll(): Promise<Video[]> {
-    return this.prisma.video.findMany();
+    return this.prisma.video.findMany({ where: { published: true } });
   }
 
   async findOne(id: number): Promise<Partial<VideoWithRelations> | null> {
@@ -43,23 +44,36 @@ export class VideosService {
     return video as Partial<VideoWithRelations>;
   }
 
-  async publish(id: number): Promise<Video> {
+  async publish(id: number, userId: number): Promise<Video> {
     const video = await this.findOne(id);
+    if (video.authorId !== userId) {
+      throw new NotFoundException(`Video: ${id} not found.`);
+    }
     return this.prisma.video.update({
       where: { id: video.id },
       data: { published: true },
     });
   }
 
-  async unPublish(id: number): Promise<Video> {
+  async unPublish(id: number, userId: number): Promise<Video> {
     const video = await this.findOne(id);
+    if (video.authorId !== userId) {
+      throw new NotFoundException(`Video: ${id} not found.`);
+    }
     return this.prisma.video.update({
       where: { id: video.id },
       data: { published: false },
     });
   }
-  async update(id: number, updateVideoDto: UpdateVideoDto): Promise<Video> {
+  async update(
+    id: number,
+    updateVideoDto: UpdateVideoDto,
+    userId: number,
+  ): Promise<Video> {
     const video = await this.findOne(id);
+    if (video.authorId !== userId) {
+      throw new NotFoundException(`Video: ${id} not found.`);
+    }
     return this.prisma.video.update({
       where: {
         id: video.id,

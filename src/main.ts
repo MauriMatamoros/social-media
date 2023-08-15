@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import * as process from 'process';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import helmet from 'helmet';
 
 let PORT: string;
 async function bootstrap() {
@@ -11,6 +12,8 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }),
   );
+  app.enableCors();
+  app.use(helmet());
   const config = new DocumentBuilder()
     .setTitle('Nicasource Assignment')
     .addBearerAuth()

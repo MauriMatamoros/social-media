@@ -19,13 +19,4 @@ export class CreateVideoDto {
   @IsUrl()
   @IsNotEmpty()
   src: string;
-
-  @ApiProperty({
-    type: String,
-    description: "This is the author's id",
-    example: '1',
-  })
-  @IsString()
-  @IsNotEmpty()
-  authorId: string;
 }

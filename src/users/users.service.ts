@@ -8,6 +8,7 @@ import {
 import { CreateUserDto } from './dto/create-user.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma, User, Video } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
 export type UserWithRelations = User & {
   following: Partial<User>[];
@@ -19,13 +20,20 @@ export type UserWithRelations = User & {
 
 @Injectable()
 export class UsersService {
+  private readonly saltRounds = 10;
+
   constructor(private prisma: PrismaService) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     try {
-      return await this.prisma.user.create({ data: createUserDto });
+      const password = await bcrypt.hash(
+        createUserDto.password,
+        this.saltRounds,
+      );
+      return await this.prisma.user.create({
+        data: { ...createUserDto, password },
+      });
     } catch (e) {
-      console.log(e.message);
       if (e instanceof Prisma.PrismaClientKnownRequestError) {
         if (e.code === 'P2002') {
           throw new ConflictException(
@@ -39,6 +47,14 @@ export class UsersService {
 
   findAll(): Promise<User[]> {
     return this.prisma.user.findMany();
+  }
+
+  async findOneByEmail(email: string): Promise<User> {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      throw new NotFoundException(`User with email: ${email} does not exist.`);
+    }
+    return user;
   }
 
   async findOne(id: number): Promise<Partial<UserWithRelations> | null> {
@@ -61,16 +77,12 @@ export class UsersService {
     return user as Partial<UserWithRelations>;
   }
 
-  async follow(follower: string, following: string) {
-    const userTryingToFollow = await this.findOne(parseInt(following));
+  async follow(follower: number, following: number) {
+    const userTryingToFollow = await this.findOne(following);
     if (follower === following) {
       throw new ForbiddenException('You cannot follow yourself.');
     }
-    if (
-      userTryingToFollow.followedBy.some(
-        (user) => user.id === parseInt(follower),
-      )
-    ) {
+    if (userTryingToFollow.followedBy.some((user) => user.id === follower)) {
       throw new ConflictException(
         `User: ${follower} is already following user: ${following}`,
       );
@@ -81,23 +93,19 @@ export class UsersService {
       data: {
         followedBy: {
           connect: {
-            id: parseInt(follower),
+            id: follower,
           },
         },
       },
     });
   }
 
-  async unfollow(follower: string, unfollowing: string) {
-    const userTryingToUnfollow = await this.findOne(parseInt(unfollowing));
+  async unfollow(follower: number, unfollowing: number) {
+    const userTryingToUnfollow = await this.findOne(unfollowing);
     if (follower === unfollowing) {
       throw new ForbiddenException('You cannot unfollow yourself.');
     }
-    if (
-      !userTryingToUnfollow.followedBy.some(
-        (user) => user.id === parseInt(follower),
-      )
-    ) {
+    if (!userTryingToUnfollow.followedBy.some((user) => user.id === follower)) {
       throw new ConflictException(
         `User: ${follower} is not following user: ${unfollowing}`,
       );
@@ -107,7 +115,7 @@ export class UsersService {
       data: {
         followedBy: {
           disconnect: {
-            id: parseInt(follower),
+            id: follower,
           },
         },
       },

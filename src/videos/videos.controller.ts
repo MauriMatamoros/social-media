@@ -1,9 +1,20 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { VideosService } from './videos.service';
 import { CreateVideoDto } from './dto/create-video.dto';
 import { UpdateVideoDto } from './dto/update-video.dto';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiNotFoundResponse,
@@ -11,8 +22,13 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RequestWithUserWithRelations } from '../users/users.controller';
+import { GetAllFiltersDto } from './dto/get-all-filters.dto';
 
 @ApiTags('Videos')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('videos')
 export class VideosController {
   constructor(private readonly videosService: VideosService) {}
@@ -26,8 +42,11 @@ export class VideosController {
   @ApiBadRequestResponse({
     description: 'An array of messages detailing the fields that have errors',
   })
-  create(@Body() createVideoDto: CreateVideoDto) {
-    return this.videosService.create(createVideoDto);
+  create(
+    @Body() createVideoDto: CreateVideoDto,
+    @Req() req: RequestWithUserWithRelations,
+  ) {
+    return this.videosService.create(createVideoDto, req.user.id);
   }
 
   @Get()
@@ -59,8 +78,12 @@ export class VideosController {
   @ApiNotFoundResponse({
     description: 'Happens when the provided id does not match a video',
   })
-  update(@Param('id') id: string, @Body() updateVideoDto: UpdateVideoDto) {
-    return this.videosService.update(+id, updateVideoDto);
+  update(
+    @Param('id') id: string,
+    @Body() updateVideoDto: UpdateVideoDto,
+    @Req() req: RequestWithUserWithRelations,
+  ) {
+    return this.videosService.update(+id, updateVideoDto, req.user.id);
   }
 
   @Patch(':id/publish')
@@ -70,8 +93,8 @@ export class VideosController {
   @ApiNotFoundResponse({
     description: 'Happens when the provided id does not match a video',
   })
-  publish(@Param('id') id: string) {
-    return this.videosService.publish(+id);
+  publish(@Param('id') id: string, @Req() req: RequestWithUserWithRelations) {
+    return this.videosService.publish(+id, req.user.id);
   }
 
   @Patch(':id/unpublish')
@@ -81,11 +104,11 @@ export class VideosController {
   @ApiNotFoundResponse({
     description: 'Happens when the provided id does not match a video',
   })
-  unPublish(@Param('id') id: string) {
-    return this.videosService.unPublish(+id);
+  unPublish(@Param('id') id: string, @Req() req: RequestWithUserWithRelations) {
+    return this.videosService.unPublish(+id, req.user.id);
   }
 
-  @Patch(':id/like/:userId')
+  @Patch(':id/like')
   @ApiOperation({
     summary: 'Like a video',
   })
@@ -98,11 +121,11 @@ export class VideosController {
   @ApiConflictResponse({
     description: 'Happens when tyring to interact with a unpublished video',
   })
-  like(@Param('id') id: string, @Param('userId') userId: string) {
-    return this.videosService.like(+userId, +id);
+  like(@Param('id') id: string, @Req() req: RequestWithUserWithRelations) {
+    return this.videosService.like(req.user.id, +id);
   }
 
-  @Patch(':id/dislike/:userId')
+  @Patch(':id/dislike')
   @ApiOperation({
     summary: 'Dislike a video',
   })
@@ -115,11 +138,11 @@ export class VideosController {
   @ApiConflictResponse({
     description: 'Happens when tyring to interact with a unpublished video',
   })
-  dislike(@Param('id') id: string, @Param('userId') userId: string) {
-    return this.videosService.dislike(+userId, +id);
+  dislike(@Param('id') id: string, @Req() req: RequestWithUserWithRelations) {
+    return this.videosService.dislike(req.user.id, +id);
   }
 
-  @Patch(':id/favorite/:userId')
+  @Patch(':id/favorite')
   @ApiOperation({
     summary: 'Add video to favorites',
   })
@@ -133,11 +156,14 @@ export class VideosController {
   @ApiConflictResponse({
     description: 'Happens when tyring to interact with a unpublished video',
   })
-  addToFavorites(@Param('id') id: string, @Param('userId') userId: string) {
-    return this.videosService.addToFavorites(+userId, +id);
+  addToFavorites(
+    @Param('id') id: string,
+    @Req() req: RequestWithUserWithRelations,
+  ) {
+    return this.videosService.addToFavorites(req.user.id, +id);
   }
 
-  @Patch(':id/unfavorite/:userId')
+  @Patch(':id/unfavorite')
   @ApiOperation({
     summary: 'Remove video from favorites',
   })
@@ -152,8 +178,8 @@ export class VideosController {
   })
   removeFromFavorites(
     @Param('id') id: string,
-    @Param('userId') userId: string,
+    @Req() req: RequestWithUserWithRelations,
   ) {
-    return this.videosService.removeFromFavorites(+userId, +id);
+    return this.videosService.removeFromFavorites(req.user.id, +id);
   }
 }

@@ -19,7 +19,7 @@ async function bootstrap() {
   app.enableCors();
   app.use(helmet());
   const config = new DocumentBuilder()
-    .setTitle('Nicasource Assignment')
+    .setTitle('Nicasource Assessment')
     .addBearerAuth()
     .setDescription('A video social media')
     .setVersion('1.0')

@@ -73,10 +73,7 @@ export class UsersController {
   @ApiConflictResponse({
     description: "Happens when the user isn't following the target user",
   })
-  unfollow(
-    @Param('unfollowing') unfollowing: string,
-    @Req() req: RequestWithUserWithRelations,
-  ) {
-    return this.usersService.unfollow(req.user.id, +unfollowing);
+  unfollow(@Param('id') id: string, @Req() req: RequestWithUserWithRelations) {
+    return this.usersService.unfollow(req.user.id, +id);
   }
 }
